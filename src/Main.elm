@@ -15,9 +15,9 @@ import Head.Seo as Seo
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Index
+import InteractiveMarkdown
 import Json.Decode
 import Layout
-import Markdown
 import Metadata exposing (Metadata)
 import MySitemap
 import Page.Article
@@ -50,7 +50,7 @@ manifest =
 
 
 type alias Rendered =
-    Element Msg
+    Model -> Element Msg
 
 
 
@@ -68,7 +68,7 @@ main =
         , documents = [ markdownDocument ]
         , manifest = manifest
         , canonicalSiteUrl = canonicalSiteUrl
-        , onPageChange = \_ -> ()
+        , onPageChange = \_ -> PageChanged
         , generateFiles = generateFiles
         , internals = Pages.internals
         }
@@ -99,33 +99,35 @@ markdownDocument =
         { extension = "md"
         , metadata = Metadata.decoder
         , body =
-            \markdownBody ->
-                Html.div [] [ Markdown.toHtml [] markdownBody ]
-                    |> Element.html
-                    |> List.singleton
-                    |> Element.paragraph [ Element.width Element.fill ]
-                    |> Ok
+            InteractiveMarkdown.view
+                >> Result.map (\viewForModel model -> viewForModel model |> Element.map InteractiveMarkdownMsg)
         }
 
 
 type alias Model =
-    {}
+    InteractiveMarkdown.Model
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model, Cmd.none )
+    ( InteractiveMarkdown.init, Cmd.none )
 
 
-type alias Msg =
-    ()
+type Msg
+    = PageChanged
+    | InteractiveMarkdownMsg InteractiveMarkdown.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        () ->
-            ( model, Cmd.none )
+        PageChanged ->
+            -- Reset interactive markdown model
+            ( InteractiveMarkdown.init, Cmd.none )
+
+        InteractiveMarkdownMsg mdMsg ->
+            InteractiveMarkdown.update mdMsg model
+                |> Tuple.mapSecond (Cmd.map InteractiveMarkdownMsg)
 
 
 subscriptions : Model -> Sub Msg
@@ -164,7 +166,7 @@ pageView model siteMetadata page viewForPage =
         Metadata.Page metadata ->
             { title = metadata.title
             , body =
-                [ viewForPage
+                [ viewForPage model
                 ]
 
             --        |> Element.textColumn
@@ -173,14 +175,14 @@ pageView model siteMetadata page viewForPage =
             }
 
         Metadata.Article metadata ->
-            Page.Article.view metadata viewForPage
+            Page.Article.view metadata (viewForPage model)
 
         Metadata.Author author ->
             { title = author.name
             , body =
                 [ Palette.blogHeading author.name
                 , Author.view [] author
-                , Element.paragraph [ Element.centerX, Font.center ] [ viewForPage ]
+                , Element.paragraph [ Element.centerX, Font.center ] [ viewForPage model ]
                 ]
             }
 

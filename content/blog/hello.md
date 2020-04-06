@@ -11,9 +11,29 @@
 
 Welcome to my blog! It was built with `elm-pages`!
 
+Let's take some quizzes.
 
-```elm
-plus : number -> number -> number
-plus m n =
-    m + n
-```
+## Single answer
+
+*Question:* The most delightful frontend programming language
+
+<quiz id="q1">
+
+- [ ] JavaScript
+- [ ] TypeScript
+- [X] Elm
+ 
+</quiz>
+
+## Multiple choice
+
+*Question:* What features does Elm provide?
+
+<quiz id="q2">
+
+- [X] No runtime errors
+- [ ] Dynamic typing
+- [X] Friendly compiler
+- [ ] Type classes
+
+</quiz>
